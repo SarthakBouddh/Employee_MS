@@ -1,7 +1,6 @@
 import { apiConnector } from "../apiConnector";
 import { toast } from "react-toastify";
-
-const BASE_URL = "http://localhost:5000/api/v1";
+import { BASE_URL } from "../apiConfig";
 
 // CREATE TASK (Admin only)
 export const createTask = async (token, taskData) => {

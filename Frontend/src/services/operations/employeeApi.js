@@ -1,5 +1,5 @@
 import { apiConnector } from "../apiConnector";
-const BASE_URL = "http://localhost:5000/api/v1";
+import { BASE_URL } from "../apiConfig";
 import { toast } from "react-toastify";
 
 export const getTasksByStatus = async (token, status) => {
