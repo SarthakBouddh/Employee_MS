@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+*{
+  color:'white';
+}
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+/* EmployeeDashBoard tasklist */
+#tasklist {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+  overflow-x: auto; /* Enable horizontal scroll */
+  overflow-y: hidden; /* Prevent vertical scroll if unnecessary */
+ }
+
+#tasklist::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* login Page */
+#login{
+  overflow-x: hidden;
+  overscroll-behavior: none;
+}
+
+/* AllTask shown in adminDashboard  */
+.custom-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
