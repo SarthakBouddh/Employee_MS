@@ -1,10 +1,11 @@
 const mongoose = require("mongoose");
-
+const config = require("../config/config");
 require("dotenv").config();
 
 const dbConnect = () => {
+  console.log("MONGODB", config.MONGODB);
   mongoose
-    .connect(process.env.MONGO_URI)
+    .connect(config.MONGODB)
     .then(() => console.log("DB Connected  Successfully"))
     .catch((error) => {
       console.log("Issue in DB Connection");
