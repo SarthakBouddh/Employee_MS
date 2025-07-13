@@ -1,21 +1,21 @@
-// Get the backend URL from environment variable or use appropriate fallback
+const isBrowser = typeof window !== "undefined";
+
 const getBackendUrl = () => {
-  // Check if we're in production (Vercel)
-  if (window.location.hostname !== 'localhost') {
-    // Production: Use environment variable or default Render URL
-    return import.meta.env.VITE_BACKEND_URL || 'https://employee-ms-9rwp.onrender.com';
+  const fallbackURL = 'https://employee-ms-9rwp.onrender.com';
+  const localURL = 'http://localhost:5000';
+
+  if (isBrowser && window.location.hostname !== 'localhost') {
+    return import.meta.env.VITE_BACKEND_URL || fallbackURL;
   } else {
-    // Development: Use localhost
-    return import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+    return import.meta.env.VITE_BACKEND_URL || localURL;
   }
 };
 
-export const BASE_URL = getBackendUrl();
+const normalizeUrl = (url) => url.replace(/\/+$/, "");
 
-// Add API version prefix
+export const BASE_URL = normalizeUrl(getBackendUrl());
 export const API_BASE_URL = `${BASE_URL}/api/v1`;
 
-// Log the base URL in development to help with debugging
 if (import.meta.env.DEV) {
   console.log('Backend URL:', BASE_URL);
   console.log('API Base URL:', API_BASE_URL);

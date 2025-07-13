@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import { API_BASE_URL } from "../apiConfig";
 
 // CREATE TASK (Admin only)
+// CREATE TASK (Admin only)
 export const createTask = async (token, taskData) => {
   try {
     const response = await apiConnector(
@@ -16,8 +17,9 @@ export const createTask = async (token, taskData) => {
     toast.success("Task created successfully");
     return response.data;
   } catch (error) {
-    const message = error?.response?.data?.message || "Failed to create task";
+    const message = error?.response?.message || error.message || "Failed to create task";
     toast.error(message);
+    throw new Error(message); // Optional: re-throw for upstream handling
   }
 };
 
@@ -33,5 +35,9 @@ export const getAllEmployees = async (token) => {
       }
     );
     return response.data;
-  } catch (error) {}
+  } catch (error) {
+    const message = error?.response?.message || error.message || "Failed to fetch employees";
+    toast.error(message);
+    throw new Error(message);
+  }
 };

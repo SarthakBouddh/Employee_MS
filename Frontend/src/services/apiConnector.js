@@ -30,8 +30,11 @@ export const apiConnector = async (
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.message || "API request failed");
-  }
+    const error = new Error(result.message || "API request failed");
+    error.response = result;
+    error.status = response.status;
+    throw error;
+  }  
 
   return result;
 };
