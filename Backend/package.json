@@ -1,5 +1,4 @@
 {
-  "homepage": "https://SarthakBouddh.github.io/TextUtils",
   "name": "backend",
   "version": "1.0.0",
   "main": "server.js",
@@ -11,7 +10,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Employee Management System Backend",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
@@ -26,5 +25,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

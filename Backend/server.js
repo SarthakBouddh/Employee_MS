@@ -8,7 +8,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5000;
 
 // ✅ CORS configuration - Allow multiple origins
 const allowedOrigins = [
@@ -60,6 +60,14 @@ app.get("/health", (req, res) => {
     message: "Server is healthy",
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Catch-all route for undefined routes
+app.use("*", (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.originalUrl} not found`
   });
 });
 
