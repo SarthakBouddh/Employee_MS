@@ -18,7 +18,6 @@ const allowedOrigins = [
   'https://employee-ms.vercel.app'
 ].filter(Boolean); // Remove undefined values
 
-console.log("ALLOWED ORIGINS:", allowedOrigins);
 app.use(
   cors({
     origin: function (origin, callback) {
