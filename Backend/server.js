@@ -16,7 +16,7 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
-}));
+}))
 
 // Middleware
 app.use(express.json());
@@ -39,42 +39,31 @@ const connectDB = async () => {
   }
 };
 
-// Initialize database connection
-let dbConnected = false;
-connectDB().then(connected => {
-  dbConnected = connected;
-});
+// Initialize routes after database connection
+const initializeRoutes = async () => {
+  try {
+    // Import routes
+    const authRoutes = require("./routes/authRoutes");
+    const employeeRoutes = require("./routes/employeeRoutes");
+    const taskRoutes = require("./routes/taskRoutes");
 
-// Import routes only if they exist
-let authRoutes, employeeRoutes, taskRoutes;
-
-try {
-  authRoutes = require("./routes/authRoutes");
-  employeeRoutes = require("./routes/employeeRoutes");
-  taskRoutes = require("./routes/taskRoutes");
-} catch (error) {
-  console.error("Error loading routes:", error.message);
-}
-
-// Routes - only add if they exist and database is connected
-if (authRoutes && dbConnected) {
-  app.use("/api/v1/auth", authRoutes);
-}
-
-if (employeeRoutes && dbConnected) {
-  app.use("/api/v1/employee", employeeRoutes);
-}
-
-if (taskRoutes && dbConnected) {
-  app.use("/api/v1/task", taskRoutes);
-}
+    // Add routes
+    app.use("/api/v1/auth", authRoutes);
+    app.use("/api/v1/employee", employeeRoutes);
+    app.use("/api/v1/task", taskRoutes);
+    
+    console.log("Routes initialized successfully");
+  } catch (error) {
+    console.error("Error initializing routes:", error.message);
+  }
+};
 
 // Test route
 app.get("/", (req, res) => {
   res.json({
     success: true,
     message: "Employee Management System API is running",
-    database: dbConnected ? "connected" : "disconnected"
+    database: mongoose.connection.readyState === 1 ? "connected" : "disconnected"
   });
 });
 
@@ -84,7 +73,7 @@ app.get("/health", (req, res) => {
     success: true,
     message: "Server is healthy",
     timestamp: new Date().toISOString(),
-    database: dbConnected ? "connected" : "disconnected",
+    database: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
     environment: process.env.NODE_ENV || 'development'
   });
 });
@@ -107,10 +96,28 @@ app.use("*", (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`MongoDB URI: ${process.env.MONGO_URI ? 'Set' : 'Not set'}`);
-  console.log(`Database Status: ${dbConnected ? 'Connected' : 'Disconnected'}`);
-});
+// Start server and initialize routes
+const startServer = async () => {
+  try {
+    // Connect to database
+    const dbConnected = await connectDB();
+    
+    // Initialize routes if database is connected
+    if (dbConnected) {
+      await initializeRoutes();
+    }
+    
+    // Start server
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`MongoDB URI: ${process.env.MONGO_URI ? 'Set' : 'Not set'}`);
+      console.log(`Database Status: ${dbConnected ? 'Connected' : 'Disconnected'}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
+};
+
+startServer();
