@@ -6,7 +6,14 @@ const AppError = require("../utils/appError");
 
 exports.login = async (req, res, next) => {
   try {
+    console.log('Login attempt:', { email: req.body.email });
+    
     const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return next(new AppError("Email and password are required", 400));
+    }
 
     // Check if the user exists
     const user = await User.findOne({ email });
@@ -18,6 +25,12 @@ exports.login = async (req, res, next) => {
     const correctPassword = await user.verifyPassword(password);
     if (!correctPassword) {
       return next(new AppError("Incorrect email or password", 401));
+    }
+
+    // Check if JWT secret is configured
+    if (!config.jwtSecret) {
+      console.error('JWT_SECRET is not configured');
+      return next(new AppError("Server configuration error", 500));
     }
 
     const token = jwt.sign({ id: user._id }, config.jwtSecret, {
@@ -32,6 +45,8 @@ exports.login = async (req, res, next) => {
       maxAge: Number(config.jwtTokenExpiresIn.slice(0, -1)) * 24 * 60 * 60 * 1000, // removed d from duration (eg 90d)
     });
 
+    console.log('Login successful for user:', user.email);
+
     // Send the token as response
     res.status(200).json({
       status: "success",
@@ -39,6 +54,7 @@ exports.login = async (req, res, next) => {
       data: { user, token },
     });
   } catch (error) {
-    next(error)
+    console.error('Login error:', error);
+    next(error);
   }
 };

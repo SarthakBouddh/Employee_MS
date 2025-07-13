@@ -2,13 +2,27 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 const dbConnect = () => {
+  // Check if MONGO_URI is set
+  if (!process.env.MONGO_URI) {
+    console.error("MONGO_URI is not set in environment variables");
+    throw new Error("MongoDB connection string is not configured");
+  }
+
+  console.log("Attempting to connect to MongoDB...");
+  
   mongoose
     .connect(process.env.MONGO_URI)
-    .then(() => console.log("DB Connected  Successfully"))
+    .then(() => {
+      console.log("DB Connected Successfully");
+      console.log("Database:", mongoose.connection.db.databaseName);
+    })
     .catch((error) => {
       console.log("Issue in DB Connection");
-      console.error(error.message);
-      console.log(error);
+      console.error("MongoDB Connection Error:", error.message);
+      console.error("Full error:", error);
+      
+      // Don't exit the process, let it continue but log the error
+      console.log("Server will continue without database connection");
     });
 };
 
