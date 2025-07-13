@@ -40,6 +40,8 @@ app.use(cookieParser());
 
 
 dbConnect();
+console.log("Database connected"); 
+
 
 // Routes
 app.use("/api/v1/auth", authRoutes);
