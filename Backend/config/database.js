@@ -23,9 +23,6 @@ const dbConnect = () => {
     .catch((error) => {
       console.log("Issue in DB Connection");
       console.error("MongoDB Connection Error:", error.message);
-      
-      // Don't exit the process, let it continue but log the error
-      console.log("Server will continue without database connection");
     });
 };
 
