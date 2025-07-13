@@ -39,71 +39,6 @@ const connectDB = async () => {
   }
 };
 
-// Check if all required files exist
-const checkDependencies = () => {
-  const requiredFiles = [
-    './routes/authRoutes.js',
-    './routes/employeeRoutes.js', 
-    './routes/taskRoutes.js',
-    './controllers/authController.js',
-    './controllers/employee.js',
-    './controllers/taskController.js',
-    './models/userModel.js',
-    './models/taskModel.js',
-    './middlewares/authMiddleware.js',
-    './middlewares/handleValidation.js',
-    './validators/authValidator.js',
-    './validators/taskVaildator.js',
-    './utils/catchAsync.js',
-    './utils/appError.js',
-    './config/config.js'
-  ];
-
-  const missingFiles = [];
-  
-  for (const file of requiredFiles) {
-    try {
-      require.resolve(file);
-    } catch (error) {
-      missingFiles.push(file);
-    }
-  }
-
-  if (missingFiles.length > 0) {
-    console.error("Missing required files:", missingFiles);
-    return false;
-  }
-
-  return true;
-};
-
-// Initialize routes after database connection
-const initializeRoutes = async () => {
-  try {
-    // Check dependencies first
-    if (!checkDependencies()) {
-      console.error("Missing dependencies, skipping route initialization");
-      return false;
-    }
-
-    // Import routes
-    const authRoutes = require("./routes/authRoutes");
-    const employeeRoutes = require("./routes/employeeRoutes");
-    const taskRoutes = require("./routes/taskRoutes");
-
-    // Add routes
-    app.use("/api/v1/auth", authRoutes);
-    app.use("/api/v1/employee", employeeRoutes);
-    app.use("/api/v1/task", taskRoutes);
-    
-    console.log("Routes initialized successfully");
-    return true;
-  } catch (error) {
-    console.error("Error initializing routes:", error.message);
-    return false;
-  }
-};
-
 // Test route
 app.get("/", (req, res) => {
   res.json({
@@ -142,23 +77,40 @@ app.use("*", (req, res) => {
   });
 });
 
-// Start server and initialize routes
+// Start server first, then add routes
 const startServer = async () => {
   try {
     // Connect to database
     const dbConnected = await connectDB();
     
-    // Initialize routes if database is connected
-    if (dbConnected) {
-      await initializeRoutes();
-    }
-    
-    // Start server
+    // Start server first
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`MongoDB URI: ${process.env.MONGO_URI ? 'Set' : 'Not set'}`);
       console.log(`Database Status: ${dbConnected ? 'Connected' : 'Disconnected'}`);
+      
+      // Only try to add routes if database is connected
+      if (dbConnected) {
+        setTimeout(() => {
+          try {
+            // Import routes
+            const authRoutes = require("./routes/authRoutes");
+            const employeeRoutes = require("./routes/employeeRoutes");
+            const taskRoutes = require("./routes/taskRoutes");
+
+            // Add routes
+            app.use("/api/v1/auth", authRoutes);
+            app.use("/api/v1/employee", employeeRoutes);
+            app.use("/api/v1/task", taskRoutes);
+            
+            console.log("Routes initialized successfully");
+          } catch (error) {
+            console.error("Error initializing routes:", error.message);
+            console.log("Server running without API routes");
+          }
+        }, 1000); // Wait 1 second before adding routes
+      }
     });
   } catch (error) {
     console.error("Failed to start server:", error);
