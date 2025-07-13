@@ -1,121 +1,133 @@
 const express = require("express");
+const authRoutes = require("./routes/authRoutes");
+const employeeRoutes = require("./routes/employeeRoutes");
+const taskRoutes = require("./routes/taskRoutes");
+const database = require("./config/database");
+const cookieParser = require("cookie-parser");
 const cors = require("cors");
-const mongoose = require("mongoose");
 require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS configuration - Allow requests from Vercel domain
-app.use(cors({
-  origin: [
-    'https://employee-ms-eta.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:5173'
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
-}))
+// ✅ CORS configuration - Allow multiple origins
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:3000',
+  'https://employee-ms-eta.vercel.app',
+  'https://employee-ms.vercel.app'
+].filter(Boolean); // Remove undefined values
 
-// Middleware
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-// Database connection with error handling
-const connectDB = async () => {
-  try {
-    if (!process.env.MONGO_URI) {
-      console.error("MONGO_URI environment variable is not set");
-      return false;
-    }
-    
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("Connected to MongoDB");
-    return true;
-  } catch (err) {
-    console.error("MongoDB connection error:", err.message);
-    return false;
-  }
-};
 
-// Test route
+dbConnect();
+
+// Routes
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/task", taskRoutes);
+app.use("/api/v1/employee", employeeRoutes);
+
+// Default route
 app.get("/", (req, res) => {
-  res.json({
+  return res.json({
     success: true,
-    message: "Employee Management System API is running",
-    database: mongoose.connection.readyState === 1 ? "connected" : "disconnected"
+    message: "Your server is up and running....",
   });
 });
 
-// Health check
+// Health check endpoint
 app.get("/health", (req, res) => {
-  res.json({
+  return res.json({
     success: true,
     message: "Server is healthy",
     timestamp: new Date().toISOString(),
-    database: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
     environment: process.env.NODE_ENV || 'development'
   });
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    success: false,
-    message: "Something went wrong!",
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
-  });
-});
-
-// 404 handler
+// Catch-all route for undefined routes
 app.use("*", (req, res) => {
   res.status(404).json({
     success: false,
-    message: "Route not found"
+    message: `Route ${req.originalUrl} not found`
   });
 });
 
-// Start server first, then add routes
-const startServer = async () => {
-  try {
-    // Connect to database
-    const dbConnected = await connectDB();
-    
-    // Start server first
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`MongoDB URI: ${process.env.MONGO_URI ? 'Set' : 'Not set'}`);
-      console.log(`Database Status: ${dbConnected ? 'Connected' : 'Disconnected'}`);
-      
-      // Only try to add routes if database is connected
-      if (dbConnected) {
-        setTimeout(() => {
-          try {
-            // Import routes
-            const authRoutes = require("./routes/authRoutes");
-            const employeeRoutes = require("./routes/employeeRoutes");
-            const taskRoutes = require("./routes/taskRoutes");
-
-            // Add routes
-            app.use("/api/v1/auth", authRoutes);
-            app.use("/api/v1/employee", employeeRoutes);
-            app.use("/api/v1/task", taskRoutes);
-            
-            console.log("Routes initialized successfully");
-          } catch (error) {
-            console.error("Error initializing routes:", error.message);
-            console.log("Server running without API routes");
-          }
-        }, 1000); // Wait 1 second before adding routes
-      }
+// Add error handling middleware AFTER routes
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  
+  // Handle CORS errors
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({
+      success: false,
+      message: 'CORS error: Origin not allowed'
     });
-  } catch (error) {
-    console.error("Failed to start server:", error);
-    process.exit(1);
   }
-};
+  
+  // Handle validation errors
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({
+      success: false,
+      message: err.message
+    });
+  }
+  
+  // Handle JWT errors
+  if (err.name === 'JsonWebTokenError') {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid token'
+    });
+  }
+  
+  // Handle MongoDB errors
+  if (err.name === 'MongoError' || err.name === 'MongoServerError') {
+    return res.status(500).json({
+      success: false,
+      message: 'Database error',
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Database connection issue'
+    });
+  }
+  
+  // Default error response
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
 
-startServer();
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Promise Rejection:', err);
+  process.exit(1);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  process.exit(1);
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
