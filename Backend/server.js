@@ -3,14 +3,6 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-// Import routes
-const authRoutes = require("./routes/authRoutes");
-const employeeRoutes = require("./routes/employeeRoutes");
-const taskRoutes = require("./routes/taskRoutes");
-
-// Import middleware
-const validate = require("./middlewares/handleValidation");
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -30,25 +22,59 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Database connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
+// Database connection with error handling
+const connectDB = async () => {
+  try {
+    if (!process.env.MONGO_URI) {
+      console.error("MONGO_URI environment variable is not set");
+      return false;
+    }
+    
+    await mongoose.connect(process.env.MONGO_URI);
     console.log("Connected to MongoDB");
-  })
-  .catch((err) => {
-    console.error("MongoDB connection error:", err);
-  });
+    return true;
+  } catch (err) {
+    console.error("MongoDB connection error:", err.message);
+    return false;
+  }
+};
 
-// Routes
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/employee", employeeRoutes);
-app.use("/api/v1/task", taskRoutes);
+// Initialize database connection
+let dbConnected = false;
+connectDB().then(connected => {
+  dbConnected = connected;
+});
+
+// Import routes only if they exist
+let authRoutes, employeeRoutes, taskRoutes;
+
+try {
+  authRoutes = require("./routes/authRoutes");
+  employeeRoutes = require("./routes/employeeRoutes");
+  taskRoutes = require("./routes/taskRoutes");
+} catch (error) {
+  console.error("Error loading routes:", error.message);
+}
+
+// Routes - only add if they exist and database is connected
+if (authRoutes && dbConnected) {
+  app.use("/api/v1/auth", authRoutes);
+}
+
+if (employeeRoutes && dbConnected) {
+  app.use("/api/v1/employee", employeeRoutes);
+}
+
+if (taskRoutes && dbConnected) {
+  app.use("/api/v1/task", taskRoutes);
+}
 
 // Test route
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "Employee Management System API is running"
+    message: "Employee Management System API is running",
+    database: dbConnected ? "connected" : "disconnected"
   });
 });
 
@@ -57,7 +83,9 @@ app.get("/health", (req, res) => {
   res.json({
     success: true,
     message: "Server is healthy",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    database: dbConnected ? "connected" : "disconnected",
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
@@ -84,4 +112,5 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`MongoDB URI: ${process.env.MONGO_URI ? 'Set' : 'Not set'}`);
+  console.log(`Database Status: ${dbConnected ? 'Connected' : 'Disconnected'}`);
 });
