@@ -16,17 +16,22 @@ const allowedOrigins = [
   'http://localhost:3000',
   'https://employee-ms-eta.vercel.app',
   'https://employee-ms.vercel.app'
-].filter(Boolean); // Remove undefined values
+].filter(Boolean);
 
+// 🔍 Log incoming origin for debugging
+app.use((req, res, next) => {
+  console.log("Incoming origin:", req.headers.origin);
+  next();
+});
+
+// ✅ CORS middleware
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      if (allowedOrigins.indexOf(origin) !== -1) {
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.log("❌ Blocked by CORS:", origin);
         callback(new Error('Not allowed by CORS'));
       }
     },
@@ -34,30 +39,32 @@ app.use(
   })
 );
 
+// ✅ Preflight requests handling
+app.options("*", cors());
+
 app.use(express.json());
 app.use(cookieParser());
 
-
+// ✅ Connect to MongoDB
 dbConnect();
-console.log("Database connected"); 
+console.log("✅ Database connected");
 
-
-// Routes
+// ✅ Routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/task", taskRoutes);
 app.use("/api/v1/employee", employeeRoutes);
 
-// Default route
+// ✅ Default route
 app.get("/", (req, res) => {
-  return res.json({
+  res.json({
     success: true,
     message: "Your server is up and running....",
   });
 });
 
-// Health check endpoint
+// ✅ Health check route
 app.get("/health", (req, res) => {
-  return res.json({
+  res.json({
     success: true,
     message: "Server is healthy",
     timestamp: new Date().toISOString(),
@@ -65,7 +72,7 @@ app.get("/health", (req, res) => {
   });
 });
 
-// Catch-all route for undefined routes
+// ✅ Catch-all 404 route
 app.use("*", (req, res) => {
   res.status(404).json({
     success: false,
@@ -73,35 +80,31 @@ app.use("*", (req, res) => {
   });
 });
 
-// Add error handling middleware AFTER routes
+// ✅ Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  
-  // Handle CORS errors
+  console.error('❌ Error:', err);
+
   if (err.message === 'Not allowed by CORS') {
     return res.status(403).json({
       success: false,
       message: 'CORS error: Origin not allowed'
     });
   }
-  
-  // Handle validation errors
+
   if (err.name === 'ValidationError') {
     return res.status(400).json({
       success: false,
       message: err.message
     });
   }
-  
-  // Handle JWT errors
+
   if (err.name === 'JsonWebTokenError') {
     return res.status(401).json({
       success: false,
       message: 'Invalid token'
     });
   }
-  
-  // Handle MongoDB errors
+
   if (err.name === 'MongoError' || err.name === 'MongoServerError') {
     return res.status(500).json({
       success: false,
@@ -109,8 +112,7 @@ app.use((err, req, res, next) => {
       error: process.env.NODE_ENV === 'development' ? err.message : 'Database connection issue'
     });
   }
-  
-  // Default error response
+
   res.status(500).json({
     success: false,
     message: 'Internal server error',
@@ -118,18 +120,19 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Handle unhandled promise rejections
+// ✅ Unhandled rejections
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Promise Rejection:', err);
   process.exit(1);
 });
 
-// Handle uncaught exceptions
+// ✅ Uncaught exceptions
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
   process.exit(1);
 });
 
+// ✅ Start server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
 });
