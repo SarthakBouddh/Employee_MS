@@ -1,9 +1,9 @@
 import { apiConnector } from "../apiConnector";
-import { BASE_URL } from "../apiConfig";
+import { API_BASE_URL } from "../apiConfig";
 import { toast } from "react-toastify";
 
 export const getTasksByStatus = async (token, status) => {
-  const url = `${BASE_URL}/task/get-tasks?status=${status}`;
+  const url = `${API_BASE_URL}/task/get-tasks?status=${status}`;
   try {
     const response = await apiConnector("GET", url, null, {
       Authorization: `Bearer ${token}`,
@@ -14,7 +14,7 @@ export const getTasksByStatus = async (token, status) => {
 
 export const updateTaskStatus = async (token, taskId, status) => {
   try {
-    const url = `${BASE_URL}/employee/update-task-status/${taskId}`;
+    const url = `${API_BASE_URL}/employee/update-task-status/${taskId}`;
     const response = await apiConnector(
       "PATCH",
       url,

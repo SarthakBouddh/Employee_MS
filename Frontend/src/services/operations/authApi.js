@@ -1,12 +1,12 @@
 import { apiConnector } from "../apiConnector";
 import { toast } from "react-toastify";
-import { BASE_URL } from "../apiConfig";
+import { API_BASE_URL } from "../apiConfig";
 
 export const login = async (credentials, setUser, navigate) => {
   try {
     const response = await apiConnector(
       "POST",
-      `${BASE_URL}/auth/login`,
+      `${API_BASE_URL}/auth/login`,
       credentials
     );
 

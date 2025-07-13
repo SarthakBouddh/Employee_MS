@@ -1,13 +1,13 @@
 import { apiConnector } from "../apiConnector";
 import { toast } from "react-toastify";
-import { BASE_URL } from "../apiConfig";
+import { API_BASE_URL } from "../apiConfig";
 
 // CREATE TASK (Admin only)
 export const createTask = async (token, taskData) => {
   try {
     const response = await apiConnector(
       "POST",
-      `${BASE_URL}/task/create`,
+      `${API_BASE_URL}/task/create`,
       taskData,
       {
         Authorization: `Bearer ${token}`,
@@ -26,7 +26,7 @@ export const getAllEmployees = async (token) => {
   try {
     const response = await apiConnector(
       "GET",
-      `${BASE_URL}/employee/employees`,
+      `${API_BASE_URL}/employee/employees`,
       null,
       {
         Authorization: `Bearer ${token}`,
