@@ -39,9 +39,53 @@ const connectDB = async () => {
   }
 };
 
+// Check if all required files exist
+const checkDependencies = () => {
+  const requiredFiles = [
+    './routes/authRoutes.js',
+    './routes/employeeRoutes.js', 
+    './routes/taskRoutes.js',
+    './controllers/authController.js',
+    './controllers/employee.js',
+    './controllers/taskController.js',
+    './models/userModel.js',
+    './models/taskModel.js',
+    './middlewares/authMiddleware.js',
+    './middlewares/handleValidation.js',
+    './validators/authValidator.js',
+    './validators/taskVaildator.js',
+    './utils/catchAsync.js',
+    './utils/appError.js',
+    './config/config.js'
+  ];
+
+  const missingFiles = [];
+  
+  for (const file of requiredFiles) {
+    try {
+      require.resolve(file);
+    } catch (error) {
+      missingFiles.push(file);
+    }
+  }
+
+  if (missingFiles.length > 0) {
+    console.error("Missing required files:", missingFiles);
+    return false;
+  }
+
+  return true;
+};
+
 // Initialize routes after database connection
 const initializeRoutes = async () => {
   try {
+    // Check dependencies first
+    if (!checkDependencies()) {
+      console.error("Missing dependencies, skipping route initialization");
+      return false;
+    }
+
     // Import routes
     const authRoutes = require("./routes/authRoutes");
     const employeeRoutes = require("./routes/employeeRoutes");
@@ -53,8 +97,10 @@ const initializeRoutes = async () => {
     app.use("/api/v1/task", taskRoutes);
     
     console.log("Routes initialized successfully");
+    return true;
   } catch (error) {
     console.error("Error initializing routes:", error.message);
+    return false;
   }
 };
 
