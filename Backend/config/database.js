@@ -1,12 +1,28 @@
 const mongoose = require("mongoose");
 const config = require("./config");
 
-const connectDB = async () => {
-    try{ 
-      await mongoose.connect(config.MONGODB);
-    }catch(error){
-       process.exit(1);
-    }
-}
+const dbConnect = async () => {
+  const uri = config.MONGODB;
+  if (!uri) {
+    console.error("❌ MONGO_URI is undefined");
+    process.exit(1);
+  }
 
-module.exports = connectDB;
+  try {
+    await mongoose.connect(uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000, // Wait 5s for MongoDB server
+    });
+    console.log("✅ MongoDB connected");
+  } catch (error) {
+    console.error("❌ MongoDB connection failed:", error.message);
+    // Optional: retry after a delay instead of exiting
+    setTimeout(() => {
+      console.log("🔁 Retrying DB connection...");
+      dbConnect();
+    }, 5000); // retry after 5 seconds
+  }
+};
+
+module.exports = dbConnect;
